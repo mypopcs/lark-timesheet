@@ -122,7 +122,11 @@ export const LogModal: React.FC<{
               <input
                 type="date"
                 name="date"
-                value={formData.date.replace(/\//g, "-")}
+                value={
+                  typeof formData.date === "string"
+                    ? formData.date.replace(/\//g, "-")
+                    : formData.date
+                }
                 onChange={handleChange}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500"
                 disabled={!isCreating}

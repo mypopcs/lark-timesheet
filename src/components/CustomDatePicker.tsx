@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   format,
   startOfWeek,
-  addDays,
   isSameDay,
   startOfMonth,
   endOfMonth,
