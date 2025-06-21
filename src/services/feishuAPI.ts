@@ -5,10 +5,58 @@ const baseUrl = "/feishu";
 export const feishuAPIService = {
   // 动态获取类型列表
   getTypes: async (config: FeishuConfig): Promise<string[]> => {
-    const records = await feishuAPIService.getRecords(config);
-    // 提取所有唯一type
-    const typeSet = new Set(records.map((item) => item.type).filter(Boolean));
-    return Array.from(typeSet);
+    if (
+      !config.appId ||
+      !config.appSecret ||
+      !config.appToken ||
+      !config.tableId
+    ) {
+      console.warn("飞书配置不完整，跳过获取类型。");
+      return [];
+    }
+
+    try {
+      const token = await getAccessToken(config);
+      const response = await fetch(
+        `${baseUrl}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/fields`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json; charset=utf-8",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error(`获取字段列表失败: HTTP ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+
+      if (data.code !== 0) {
+        console.error(`获取字段列表失败: ${data.msg} (错误码: ${data.code})`);
+        return [];
+      }
+
+      const typeField = data.data.items.find(
+        (field: any) => field.field_name === "类型"
+      );
+
+      if (typeField && typeField.property && typeField.property.options) {
+        const options = typeField.property.options.map(
+          (option: any) => option.name
+        );
+        return options;
+      }
+
+      console.warn("未在飞书表格中找到'类型'字段或其选项。");
+      return [];
+    } catch (error) {
+      console.error("获取飞书字段类型时出错:", error);
+      return [];
+    }
   },
 
   // 获取飞书表格数据

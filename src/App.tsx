@@ -311,9 +311,7 @@ const App: React.FC = () => {
         <header className="mb-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-800">
-                小时工作记录表
-              </h1>
+              <h1 className="text-xl font-bold text-gray-800">工作记录</h1>
               <div className="relative">
                 <Search
                   size={18}
@@ -465,29 +463,18 @@ const App: React.FC = () => {
               );
             })}
 
-            <div className="col-start-1 border-r ">
-              {timeLabels.map((time) => (
-                <div
-                  key={time}
-                  className="h-20 flex items-start justify-center pt-1"
-                >
-                  <span className="text-xs text-gray-500 -mt-2">{time}</span>
-                </div>
-              ))}
-            </div>
-            {weekDays.map((day) => {
-              const isToday = isSameDay(day, new Date());
+            {timeLabels.map((time, hourIndex) => {
+              const hour = hourIndex + 8;
               return (
-                <div
-                  key={day.toISOString()}
-                  className={`col-auto border-r ${
-                    isToday
-                      ? "bg-blue-50 border-l-2 border-r-2 border-blue-200 -ml-px"
-                      : ""
-                  }`}
-                >
-                  {timeLabels.map((_, hourIndex) => {
-                    const hour = hourIndex + 8;
+                <div key={time} style={{ display: "contents" }}>
+                  {/* Time Label */}
+                  <div className="col-start-1 border-r border-b border-gray-200 min-h-[3rem] flex items-start justify-center pt-1">
+                    <span className="text-xs text-gray-500 -mt-1">{time}</span>
+                  </div>
+
+                  {/* Day Cells */}
+                  {weekDays.map((day) => {
+                    const isToday = isSameDay(day, new Date());
                     const entriesForCell = filteredEntries
                       .filter((entry) => {
                         let dateStr = entry.date;
@@ -506,7 +493,11 @@ const App: React.FC = () => {
                     return (
                       <div
                         key={`${day.toISOString()}-${hour}`}
-                        className="h-20 border-b border-gray-200 p-1 overflow-y-auto"
+                        className={`col-auto border-r border-b border-gray-200 p-1 min-h-[3rem] overflow-y-auto ${
+                          isToday
+                            ? "bg-blue-50 border-l-2 border-r-2 border-blue-200 -ml-px"
+                            : ""
+                        }`}
                       >
                         {entriesForCell.map((entry) => (
                           <LogEntryItem

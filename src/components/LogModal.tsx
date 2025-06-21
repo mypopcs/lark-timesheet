@@ -63,10 +63,12 @@ export const LogModal: React.FC<{
   };
 
   const handleDelete = () => {
-    if (entry) onDelete(entry.id);
+    if (entry && !isCreating) {
+      onDelete(entry.id);
+    }
   };
 
-  const isCreating = !entry;
+  const isCreating = !entry?.id || entry.id.startsWith("new-");
   const isDirty = JSON.stringify(formData) !== JSON.stringify(initialData);
 
   return (
@@ -82,7 +84,7 @@ export const LogModal: React.FC<{
           <X size={24} />
         </button>
         <h2 className="text-xl font-bold mb-4">
-          {isCreating ? "创建新日志" : "编辑日志"}
+          {isCreating ? "新建日志" : "编辑日志"}
         </h2>
         <div className="space-y-4">
           <div>
@@ -141,23 +143,21 @@ export const LogModal: React.FC<{
                 name="time"
                 value={formData.time}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500"
-                disabled={!isCreating}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
               />
             </div>
           </div>
         </div>
-        <div className="mt-6 flex justify-between">
-          <div>
-            {!isCreating && (
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                删除
-              </button>
-            )}
-          </div>
+        <div className="mt-6 flex justify-end gap-3">
+          {!isCreating && (
+            <button
+              onClick={handleDelete}
+              type="button"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              删除
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={!isDirty}
