@@ -25,6 +25,7 @@ import { THEME_COLORS } from "./config/theme";
 import type { LogEntry, FeishuConfig, ColorMap, TooltipState } from "./types";
 import { MOCK_LOG_ENTRIES } from "./data/mock";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+import { feishuAPIService } from "./services/feishuAPI";
 import { LogEntryItem } from "./components/LogEntryItem";
 import { Tooltip } from "./components/Tooltip";
 import { LogModal } from "./components/LogModal";
@@ -206,9 +207,13 @@ const App: React.FC = () => {
         // 1. 获取两端数据
         const localEntries = logEntries;
         const remoteEntries = await feishuAPIService.getRecords(feishuConfig);
-        const remoteEntriesMap = new Map(remoteEntries.map((e) => [e.id, e]));
+        const remoteEntriesMap = new Map(
+          remoteEntries.map((e: LogEntry) => [e.id, e])
+        );
         let newLocalEntries = [...localEntries];
-        const localEntriesMap = new Map(newLocalEntries.map((e) => [e.id, e]));
+        const localEntriesMap = new Map(
+          newLocalEntries.map((e: LogEntry) => [e.id, e])
+        );
 
         // 2. 处理本地删除
         const toDeleteLocally = localEntries.filter(
