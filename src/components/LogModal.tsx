@@ -17,10 +17,11 @@ export const LogModal: React.FC<{
     date: "",
     time: "",
     type: "",
+    status: "未同步",
   });
   const [initialData, setInitialData] = useState<
     Omit<LogEntry, "id" | "createdAt">
-  >({ content: "", date: "", time: "", type: "" });
+  >({ content: "", date: "", time: "", type: "", status: "未同步" });
   const modalRef = useRef<HTMLDivElement>(null);
 
   useOnClickOutside(modalRef, onClose);
@@ -34,6 +35,7 @@ export const LogModal: React.FC<{
             date: format(new Date(), "yyyy/MM/dd"),
             time: format(new Date(), "HH:mm"),
             type: availableTypes[0] || "",
+            status: "未同步" as const,
           };
       setFormData(data);
       setInitialData(data);

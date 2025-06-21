@@ -112,6 +112,7 @@ export const feishuAPIService = {
         date: typeof dateStr === "string" ? dateStr : "",
         time: typeof timeStr === "string" ? timeStr : "",
         type: fields["类型"] || "",
+        status: fields["状态"] || "已同步",
         createdAt: fields["创建时间"] || new Date().toISOString(),
       };
     });
@@ -174,6 +175,7 @@ export const feishuAPIService = {
               日期: entry.date,
               时间: entry.time,
               类型: entry.type,
+              状态: entry.status,
               创建时间: entry.createdAt,
             },
           }),
@@ -202,6 +204,7 @@ export const feishuAPIService = {
       日期: dateValue,
       时间: timeStr,
       类型: entry.type,
+      状态: entry.status,
       创建时间: entry.createdAt,
       原始日期: entry.date,
       原始时间: entry.time,
@@ -213,6 +216,7 @@ export const feishuAPIService = {
       日期: dateValue,
       时间: timeStr,
       类型: entry.type,
+      状态: entry.status,
       创建时间: entry.createdAt,
     };
     const headersObj = {
@@ -265,6 +269,7 @@ export const feishuAPIService = {
       日期: dateValue2,
       时间: timeStr2,
       类型: entry.type,
+      状态: entry.status,
       创建时间: entry.createdAt,
       原始日期: entry.date,
       原始时间: entry.time,
@@ -276,6 +281,7 @@ export const feishuAPIService = {
       日期: dateValue2,
       时间: timeStr2,
       类型: entry.type,
+      状态: entry.status,
       创建时间: entry.createdAt,
     };
     const headersObj2 = {
@@ -305,6 +311,44 @@ export const feishuAPIService = {
     if (data2.code !== 0) {
       console.error("[DEBUG][updateRecord] 响应错误:", data2);
       throw new Error(`更新记录失败: ${data2.msg} (错误码: ${data2.code})`);
+    }
+  },
+
+  // 批量更新记录状态
+  batchUpdateStatus: async (
+    config: FeishuConfig,
+    records: { id: string; status: string }[]
+  ): Promise<void> => {
+    const token = await getAccessToken(config);
+    const requests = records.map((record) => ({
+      record_id: record.id,
+      fields: {
+        状态: record.status,
+      },
+    }));
+
+    const response = await fetch(
+      `${baseUrl}/bitable/v1/apps/${config.appToken}/tables/${config.tableId}/records/batch_update`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({ records: requests }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[DEBUG][batchUpdateStatus] 响应错误:", errorText);
+      throw new Error(`批量更新状态失败: HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.code !== 0) {
+      console.error("[DEBUG][batchUpdateStatus] 响应错误:", data);
+      throw new Error(`批量更新状态失败: ${data.msg} (错误码: ${data.code})`);
     }
   },
 };

@@ -9,7 +9,7 @@ export const LogEntryItem: React.FC<{
   onMouseLeave: () => void;
 }> = ({ entry, color, onClick, onMouseEnter, onMouseLeave }) => (
   <div
-    className={`w-full max-w-[240px] my-1 p-1 rounded-md cursor-pointer transition-all duration-200 ease-in-out hover:shadow-md flex justify-between items-center ${color.bg} ${color.border}`}
+    className={`w-full my-1 p-1 rounded-md cursor-pointer transition-all duration-200 ease-in-out hover:shadow-md flex justify-between items-center ${color.bg} ${color.border}`}
     onClick={onClick}
     onMouseEnter={(e) => onMouseEnter(e, entry)}
     onMouseLeave={onMouseLeave}

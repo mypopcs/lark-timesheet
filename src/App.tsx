@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -44,11 +38,17 @@ const App: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [logEntries, setLogEntries] = useLocalStorage<LogEntry[]>(
     "log_data",
-    MOCK_LOG_ENTRIES
+    MOCK_LOG_ENTRIES.map((e) => ({ ...e, status: "已同步" }))
   );
   const [feishuConfig, setFeishuConfig] = useLocalStorage<FeishuConfig>(
     "feishu_config",
-    { appId: "", appSecret: "", appToken: "", tableId: "", syncInterval: 24 }
+    {
+      appId: "cli_a8c1429555f2d00b",
+      appSecret: "GIo6yYfRrkY2MmGzPIKrOdjB66NlcDJ1",
+      appToken: "IRkPbJ7tta2qQTsOsVrcCOzmnXH",
+      tableId: "tblldsRMoNBCneUt",
+      syncInterval: 24,
+    }
   );
   const [isLogModalOpen, setLogModalOpen] = useState(false);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -56,11 +56,15 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [isSyncing, setIsSyncing] = useState(false);
-  const syncIntervalRef = useRef<number | null>(null);
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [isFullWidth, setIsFullWidth] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [lastSyncTime, setLastSyncTime] = useLocalStorage<string | null>(
+    "last_sync_time",
+    null
+  );
 
   // --- 数据获取与初始化 ---
   useEffect(() => {
@@ -101,6 +105,7 @@ const App: React.FC = () => {
   const filteredEntries = useMemo(() => {
     const result = logEntries.filter(
       (entry) =>
+        entry.status !== "本地删除" &&
         entry.content.toLowerCase().includes(searchTerm.toLowerCase()) &&
         (selectedType === "all" || entry.type === selectedType)
     );
@@ -133,13 +138,33 @@ const App: React.FC = () => {
     setLogEntries((prev) => {
       const isNew = entryToSave.id.startsWith("new-");
       const type = entryToSave.type || "其他";
+      const status = "未同步" as const;
+
       if (isNew) {
-        const newEntry = { ...entryToSave, id: crypto.randomUUID(), type };
+        const newEntry = {
+          ...entryToSave,
+          id: crypto.randomUUID(),
+          type,
+          status,
+        };
+
+        // 检查当前数据是否为初始的MOCK数据
+        const mockIds = new Set(MOCK_LOG_ENTRIES.map((e) => e.id));
+        const isPrevMock =
+          prev.length === MOCK_LOG_ENTRIES.length &&
+          prev.every((p) => mockIds.has(p.id));
+
+        if (isPrevMock) {
+          console.log("[DEBUG] 本地为虚拟数据，直接替换为新数据:", newEntry);
+          return [newEntry];
+        }
+
         console.log("[DEBUG] 新建日志:", newEntry);
         return [...prev, newEntry];
       }
+
       const updated = prev.map((e) =>
-        e.id === entryToSave.id ? { ...entryToSave, type } : e
+        e.id === entryToSave.id ? { ...entryToSave, type, status } : e
       );
       console.log("[DEBUG] 更新日志:", updated);
       return updated;
@@ -148,149 +173,171 @@ const App: React.FC = () => {
   };
 
   const handleDeleteLog = (id: string) => {
-    setLogEntries((prev) => prev.filter((e) => e.id !== id));
+    setLogEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: "本地删除" } : e))
+    );
     handleCloseLogModal();
   };
   const handleSaveSettings = (newConfig: FeishuConfig) => {
     setFeishuConfig(newConfig);
-    alert("配置已保存！");
+    setSyncMessage("配置已保存！");
+    setTimeout(() => setSyncMessage(""), 3000);
     handleCloseSettingsModal();
   };
   const handleCloseSettingsModal = () => setSettingsModalOpen(false);
 
-  const handleSync = useCallback(async () => {
-    if (
-      !feishuConfig.appId ||
-      !feishuConfig.appToken ||
-      !feishuConfig.tableId
-    ) {
-      alert("请先在设置中完成飞书 API 配置！");
-      setSettingsModalOpen(true);
-      return;
-    }
-    setIsSyncing(true);
-    console.log("[DEBUG] 开始同步，当前本地数据:", logEntries);
-    try {
-      const remoteEntries = await feishuAPIService.getRecords(feishuConfig);
-      console.log("[DEBUG] 获取到远程数据:", remoteEntries);
-      const cleanRemoteEntries = remoteEntries.filter(
-        (e) => typeof e.time === "string"
-      );
-      const cleanLocalEntries = logEntries.filter(
-        (e) => typeof e.time === "string"
-      );
-
-      // === 删除同步逻辑 ===
-      // 1. 本地有但飞书没有的（飞书被删了，本地也删）
-      const remoteIdsForDelete = new Set(cleanRemoteEntries.map((e) => e.id));
-      const onlyLocal = cleanLocalEntries.filter(
-        (e) => !remoteIdsForDelete.has(e.id)
-      );
-      if (onlyLocal.length > 0) {
-        setLogEntries((prev) =>
-          prev.filter((e) => remoteIdsForDelete.has(e.id))
-        );
-      }
-
-      // 2. 飞书有但本地没有的（本地被删了，飞书也删）
-      const localIdsForDelete = new Set(cleanLocalEntries.map((e) => e.id));
-      const onlyRemote = cleanRemoteEntries.filter(
-        (e) => !localIdsForDelete.has(e.id)
-      );
-      for (const entry of onlyRemote) {
-        try {
-          // 直接调用飞书API删除接口
-          const token = await getAccessToken(feishuConfig);
-          await fetch(
-            `/feishu/bitable/v1/apps/${feishuConfig.appToken}/tables/${feishuConfig.tableId}/records/${entry.id}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json; charset=utf-8",
-                Accept: "application/json",
-              },
-            }
-          );
-        } catch (err) {
-          console.error("删除飞书记录失败:", entry.id, err);
+  const handleSync = useCallback(
+    async (isAutoSync = false) => {
+      if (
+        !feishuConfig.appId ||
+        !feishuConfig.appToken ||
+        !feishuConfig.tableId
+      ) {
+        if (!isAutoSync) {
+          setSyncMessage("请先完成飞书 API 配置！");
+          setSettingsModalOpen(true);
+          setTimeout(() => setSyncMessage(""), 5000);
         }
-      }
-
-      // 判断本地是否为初始mock数据
-      const isMock =
-        cleanLocalEntries.length === MOCK_LOG_ENTRIES.length &&
-        cleanLocalEntries.every((e, i) => e.id === MOCK_LOG_ENTRIES[i].id);
-
-      if (isMock || cleanLocalEntries.length === 0) {
-        // 第一次同步，只用飞书数据覆盖本地，不写入飞书
-        setLogEntries(cleanRemoteEntries);
-        console.log(
-          "[DEBUG] 第一次同步，用飞书数据覆盖本地:",
-          cleanRemoteEntries
-        );
-        alert("已用飞书数据覆盖本地（未写入飞书）！");
-        setIsSyncing(false);
         return;
       }
+      setIsSyncing(true);
+      setSyncMessage("同步中...");
+      console.log("[DEBUG] 开始同步...");
 
-      // 后续同步：合并并增量写入
-      // 1. 找出本地有但飞书没有的（新增）
-      const remoteIds = new Set(cleanRemoteEntries.map((e) => e.id));
-      const toAdd = cleanLocalEntries.filter((e) => !remoteIds.has(e.id));
-      // 2. 找出本地和飞书都有但内容不同的（更新）
-      const toUpdate = cleanLocalEntries.filter((e) => {
-        const remote = cleanRemoteEntries.find((r) => r.id === e.id);
-        return remote && JSON.stringify(remote) !== JSON.stringify(e);
-      });
+      try {
+        // 1. 获取两端数据
+        const localEntries = logEntries;
+        const remoteEntries = await feishuAPIService.getRecords(feishuConfig);
+        const remoteEntriesMap = new Map(remoteEntries.map((e) => [e.id, e]));
+        let newLocalEntries = [...localEntries];
+        const localEntriesMap = new Map(newLocalEntries.map((e) => [e.id, e]));
 
-      console.log("[DEBUG] 需要新增到飞书的数据:", toAdd);
-      console.log("[DEBUG] 需要更新到飞书的数据:", toUpdate);
-
-      for (const entry of toAdd) {
-        const newId = await feishuAPIService.createRecord(feishuConfig, entry);
-        // 用飞书返回的record_id替换本地id
-        entry.id = newId;
-      }
-      for (const entry of toUpdate) {
-        await feishuAPIService.updateRecord(feishuConfig, entry);
-      }
-
-      // 再拉取一次飞书数据，刷新本地，合并本地未同步的（如有）
-      const latestRemote = await feishuAPIService.getRecords(feishuConfig);
-      // 合并本地和飞书数据，去重（以id为准）
-      const merged = [...latestRemote];
-      const remoteIdsSet = new Set(latestRemote.map((e) => e.id));
-      for (const local of logEntries) {
-        if (!remoteIdsSet.has(local.id)) {
-          merged.push(local);
+        // 2. 处理本地删除
+        const toDeleteLocally = localEntries.filter(
+          (l) => l.status === "本地删除"
+        );
+        if (toDeleteLocally.length > 0) {
+          await feishuAPIService.batchUpdateStatus(
+            feishuConfig,
+            toDeleteLocally.map((e) => ({ id: e.id, status: "本地删除" }))
+          );
+          // 彻底删除
+          newLocalEntries = newLocalEntries.filter(
+            (l) => l.status !== "本地删除"
+          );
         }
-      }
-      setLogEntries(merged);
 
-      alert("双向同步成功！");
-    } catch (error) {
-      console.error("同步失败:", error);
-      alert("同步过程中发生错误，请检查控制台。");
-    } finally {
-      setIsSyncing(false);
-      console.log("[DEBUG] 同步流程结束");
-    }
-  }, [feishuConfig, logEntries, setLogEntries]);
+        // 3. 处理本地的新增和修改
+        const toUpload = newLocalEntries.filter((l) => l.status === "未同步");
+        for (const localEntry of toUpload) {
+          const remoteEntry = remoteEntriesMap.get(localEntry.id);
+          if (remoteEntry) {
+            // 更新
+            await feishuAPIService.updateRecord(feishuConfig, {
+              ...localEntry,
+              status: "已同步",
+            });
+            // 更新本地状态
+            const index = newLocalEntries.findIndex(
+              (e) => e.id === localEntry.id
+            );
+            if (index !== -1) {
+              newLocalEntries[index].status = "已同步";
+            }
+          } else {
+            // 新增，并获取飞书返回的真实record_id
+            const newRecordId = await feishuAPIService.createRecord(
+              feishuConfig,
+              {
+                ...localEntry,
+                status: "已同步",
+              }
+            );
+            // 更新本地条目的ID和状态
+            const index = newLocalEntries.findIndex(
+              (e) => e.id === localEntry.id
+            );
+            if (index !== -1) {
+              newLocalEntries[index].id = newRecordId;
+              newLocalEntries[index].status = "已同步";
+              localEntriesMap.set(newRecordId, newLocalEntries[index]); // 更新map
+              localEntriesMap.delete(localEntry.id); // 删除旧的临时id
+            }
+          }
+        }
+
+        // 4. 处理飞书的所有记录（下载新增/修改，并为后续删除做准备）
+        const remoteIds = new Set<string>();
+        for (const remoteEntry of remoteEntries) {
+          remoteIds.add(remoteEntry.id);
+          const localEntry = localEntriesMap.get(remoteEntry.id);
+
+          // 如果远程状态不是"本地删除" 且 本地不存在 -> 下载
+          if (remoteEntry.status !== "本地删除" && !localEntry) {
+            console.log(`[DEBUG] 从飞书下载新记录: ${remoteEntry.id}`);
+            newLocalEntries.push({ ...remoteEntry, status: "已同步" });
+            localEntriesMap.set(remoteEntry.id, {
+              ...remoteEntry,
+              status: "已同步",
+            });
+            // 如果下载的是未同步条目，需更新飞书状态
+            if (remoteEntry.status === "未同步") {
+              await feishuAPIService.updateRecord(feishuConfig, {
+                ...remoteEntry,
+                status: "已同步",
+              });
+            }
+          }
+        }
+
+        // 5. 处理在飞书上被界面外删除的记录
+        newLocalEntries = newLocalEntries.filter((l) => remoteIds.has(l.id));
+
+        setLogEntries(newLocalEntries);
+        setSyncMessage("同步成功！");
+        setLastSyncTime(format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+      } catch (error) {
+        console.error("同步失败:", error);
+        setSyncMessage("同步失败，请检查控制台");
+      } finally {
+        setIsSyncing(false);
+        console.log("[DEBUG] 同步流程结束");
+        setTimeout(() => setSyncMessage(""), 5000);
+      }
+    },
+    [feishuConfig, logEntries, setLogEntries, setLastSyncTime]
+  );
 
   // --- 自动同步 Effect ---
   useEffect(() => {
-    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
-    if (feishuConfig.syncInterval > 0) {
-      syncIntervalRef.current = setInterval(() => {
-        console.log(`执行自动同步...`);
-        handleSync();
-      }, feishuConfig.syncInterval * 3600000);
-    }
-    return () => {
-      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
+    const handlePageLoadSync = () => {
+      const hasLoadedThisSession = sessionStorage.getItem(
+        "hasLoadedThisSession"
+      );
+      let refreshCount = parseInt(
+        sessionStorage.getItem("refreshCount") || "0",
+        10
+      );
+
+      if (!hasLoadedThisSession) {
+        console.log("首次加载，执行自动同步...");
+        handleSync(true);
+        sessionStorage.setItem("hasLoadedThisSession", "true");
+        sessionStorage.setItem("refreshCount", "0");
+      } else {
+        refreshCount++;
+        if (refreshCount >= 3) {
+          console.log("连续刷新3次，执行自动同步...");
+          handleSync(true);
+          refreshCount = 0; // Reset
+        }
+        sessionStorage.setItem("refreshCount", refreshCount.toString());
+      }
     };
-  }, [feishuConfig.syncInterval, handleSync]);
+
+    handlePageLoadSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on initial mount
 
   // --- Tooltip Handlers ---
   const showTooltip = (e: React.MouseEvent, entry: LogEntry) => {
@@ -399,8 +446,11 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {syncMessage && (
+                <span className="text-xs text-gray-500">{syncMessage}</span>
+              )}
               <button
-                onClick={handleSync}
+                onClick={() => handleSync(false)}
                 disabled={isSyncing}
                 className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
               >
@@ -517,6 +567,9 @@ const App: React.FC = () => {
             })}
           </div>
         </main>
+        <footer className="pt-2 text-center text-xs text-gray-400">
+          {lastSyncTime ? `最近一次同步: ${lastSyncTime}` : "暂无同步记录"}
+        </footer>
       </div>
 
       <LogModal
@@ -529,6 +582,7 @@ const App: React.FC = () => {
             date: format(currentDate, "yyyy/MM/dd"),
             time: format(new Date(), "HH:mm"),
             type: availableTypes[0] || "其他",
+            status: "未同步",
             createdAt: new Date().toISOString(),
           }
         }

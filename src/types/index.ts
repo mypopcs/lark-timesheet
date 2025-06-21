@@ -5,6 +5,7 @@ export interface LogEntry {
   date: string | number; // 支持字符串和时间戳
   time: string; // HH:mm
   type: string;
+  status: "未同步" | "已同步" | "本地删除";
   createdAt: string; // ISO 8601
 }
 
