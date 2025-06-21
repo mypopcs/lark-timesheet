@@ -8,6 +8,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: "2025/06/13",
     time: "16:38",
     type: "开发部",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -16,6 +17,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: "2025/06/13",
     time: "17:25",
     type: "销售部",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -24,6 +26,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: "2025/06/13",
     time: "17:39",
     type: "设计部",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -32,6 +35,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: "2025/06/13",
     time: "17:53",
     type: "销售部",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -40,6 +44,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: "2025/06/17",
     time: "08:44",
     type: "其他",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -48,6 +53,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: "2025/06/17",
     time: "09:15",
     type: "其他",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -56,6 +62,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: format(new Date(), "yyyy/MM/dd"),
     time: "14:00",
     type: "人力资源",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
   {
@@ -64,6 +71,7 @@ export const MOCK_LOG_ENTRIES: LogEntry[] = [
     date: format(new Date(), "yyyy/MM/dd"),
     time: "14:30",
     type: "开发部",
+    status: "已同步",
     createdAt: new Date().toISOString(),
   },
 ];

@@ -25,8 +25,6 @@ import { THEME_COLORS } from "./config/theme";
 import type { LogEntry, FeishuConfig, ColorMap, TooltipState } from "./types";
 import { MOCK_LOG_ENTRIES } from "./data/mock";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { feishuAPIService } from "./services/feishuAPI";
-import { getAccessToken } from "./services/feishuAPI";
 import { LogEntryItem } from "./components/LogEntryItem";
 import { Tooltip } from "./components/Tooltip";
 import { LogModal } from "./components/LogModal";
