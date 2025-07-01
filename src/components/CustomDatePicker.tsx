@@ -54,7 +54,7 @@ export const CustomDatePicker: React.FC<{
           setViewDate(value);
           setIsOpen(!isOpen);
         }}
-        className="px-3 py-1.5 w-full text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-100 flex items-center justify-between"
+        className="px-3 py-1.5 w-full text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 flex items-center justify-between"
       >
         <span>{`${format(
           startOfWeek(value, { weekStartsOn }),

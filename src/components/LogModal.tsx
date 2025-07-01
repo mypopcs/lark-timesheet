@@ -23,6 +23,9 @@ export const LogModal: React.FC<{
     Omit<LogEntry, "id" | "createdAt">
   >({ content: "", date: "", time: "", type: "", status: "未同步" });
   const modalRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useOnClickOutside(modalRef, onClose);
 
@@ -60,22 +63,36 @@ export const LogModal: React.FC<{
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isDirty) return;
     if (!formData.content || !formData.type) {
       alert("内容和类型不能为空！");
       return;
     }
-    onSave({
-      ...formData,
-      id: entry?.id || `new-${Date.now()}`,
-      createdAt: entry?.createdAt || new Date().toISOString(),
-    });
+    setIsSaving(true);
+    try {
+      await onSave({
+        ...formData,
+        id: entry?.id || `new-${Date.now()}`,
+        createdAt: entry?.createdAt || new Date().toISOString(),
+      });
+      setMessage("保存成功");
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (entry && !isCreating) {
-      onDelete(entry.id);
+      setIsDeleting(true);
+      try {
+        await onDelete(entry.id);
+        setMessage("删除成功");
+        setTimeout(() => setMessage(null), 3000);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -132,30 +149,19 @@ export const LogModal: React.FC<{
               <label className="block text-sm font-medium text-gray-700">
                 日期
               </label>
-              <input
-                type="date"
-                name="date"
-                value={
-                  typeof formData.date === "string"
-                    ? formData.date.replace(/\//g, "-")
-                    : formData.date
-                }
-                onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500"
-                disabled={!isCreating}
-              />
+              <div className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
+                {typeof formData.date === "string"
+                  ? formData.date.replace(/\//g, "-")
+                  : formData.date}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 时间
               </label>
-              <input
-                type="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-              />
+              <div className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
+                {formData.time}
+              </div>
             </div>
           </div>
         </div>
@@ -164,20 +170,26 @@ export const LogModal: React.FC<{
             <button
               onClick={handleDelete}
               type="button"
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              disabled={isDeleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed"
             >
-              删除
+              {isDeleting ? "删除中..." : "删除"}
             </button>
           )}
           <button
             onClick={handleSave}
-            disabled={!isDirty}
+            disabled={!isDirty || isSaving}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
           >
-            保存
+            {isSaving ? "保存中..." : "保存"}
           </button>
         </div>
       </div>
+      {message && (
+        <div className="fixed left-1/2 top-10 transform -translate-x-1/2 bg-green-500 text-white px-6 py-2 rounded shadow-lg z-50 text-base">
+          {message}
+        </div>
+      )}
     </div>
   );
 };
