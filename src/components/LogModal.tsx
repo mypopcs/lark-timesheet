@@ -57,7 +57,9 @@ export const LogModal: React.FC<{
   if (!isOpen) return null;
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -119,12 +121,12 @@ export const LogModal: React.FC<{
             <label className="block text-sm font-medium text-gray-700">
               内容
             </label>
-            <input
-              type="text"
+            <textarea
               name="content"
               value={formData.content}
               onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+              rows={4}
+              className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500 resize-y h-[68px]"
             />
           </div>
           <div>
@@ -135,7 +137,7 @@ export const LogModal: React.FC<{
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {availableTypes.map((t) => (
                 <option key={t} value={t}>
@@ -149,7 +151,7 @@ export const LogModal: React.FC<{
               <label className="block text-sm font-medium text-gray-700">
                 日期
               </label>
-              <div className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
+              <div className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
                 {typeof formData.date === "string"
                   ? formData.date.replace(/\//g, "-")
                   : formData.date}
@@ -159,7 +161,7 @@ export const LogModal: React.FC<{
               <label className="block text-sm font-medium text-gray-700">
                 时间
               </label>
-              <div className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
+              <div className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
                 {formData.time}
               </div>
             </div>
@@ -171,7 +173,7 @@ export const LogModal: React.FC<{
               onClick={handleDelete}
               type="button"
               disabled={isDeleting}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-red-600 text-sm text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed"
             >
               {isDeleting ? "删除中..." : "删除"}
             </button>
@@ -179,7 +181,7 @@ export const LogModal: React.FC<{
           <button
             onClick={handleSave}
             disabled={!isDirty || isSaving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-sm text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
           >
             {isSaving ? "保存中..." : "保存"}
           </button>

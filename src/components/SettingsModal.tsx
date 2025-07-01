@@ -67,7 +67,7 @@ export const SettingsModal: React.FC<{
               value={formData.appId}
               onChange={handleChange}
               placeholder="请输入 App ID"
-              className={inputStyle}
+              className={`text-sm ${inputStyle}`}
             />
           </div>
           <div>
@@ -80,7 +80,7 @@ export const SettingsModal: React.FC<{
               value={formData.appSecret}
               onChange={handleChange}
               placeholder="请输入 App Secret"
-              className={inputStyle}
+              className={`text-sm ${inputStyle}`}
             />
           </div>
           <div>
@@ -92,7 +92,7 @@ export const SettingsModal: React.FC<{
               value={formData.appToken}
               onChange={handleChange}
               placeholder="即 Base Token"
-              className={inputStyle}
+              className={`text-sm ${inputStyle}`}
             />
           </div>
           <div>
@@ -104,7 +104,7 @@ export const SettingsModal: React.FC<{
               value={formData.tableId}
               onChange={handleChange}
               placeholder="请输入 Table ID"
-              className={inputStyle}
+              className={`text-sm ${inputStyle}`}
             />
           </div>
           <div>
@@ -117,7 +117,7 @@ export const SettingsModal: React.FC<{
               min="1"
               value={formData.syncInterval}
               onChange={handleChange}
-              className={inputStyle}
+              className={`text-sm ${inputStyle}`}
             />
           </div>
         </div>
@@ -125,7 +125,7 @@ export const SettingsModal: React.FC<{
           <button
             onClick={handleSave}
             disabled={!isDirty}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-sm text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
           >
             保存配置
           </button>
