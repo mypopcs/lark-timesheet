@@ -299,6 +299,9 @@ const App: React.FC = () => {
         setLogEntries(newLocalEntries);
         setSyncMessage("同步成功！");
         setLastSyncTime(format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+        // --- 新增：同步后刷新类型选项 ---
+        const types = await feishuAPIService.getTypes(feishuConfig);
+        setAvailableTypes(types.length > 0 ? types : ["其他"]);
       } catch (error) {
         console.error("同步失败:", error);
         setSyncMessage("同步失败，请检查控制台");
