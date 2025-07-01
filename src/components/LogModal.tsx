@@ -37,8 +37,17 @@ export const LogModal: React.FC<{
             type: availableTypes[0] || "",
             status: "未同步" as const,
           };
-      setFormData(data);
-      setInitialData(data);
+      let timeStr = data.time || "";
+      if (typeof timeStr === "string" && timeStr) {
+        const match = timeStr.match(/^(\d{1,2}):(\d{1,2})/);
+        if (match) {
+          const h = match[1].padStart(2, "0");
+          const m = match[2].padStart(2, "0");
+          timeStr = `${h}:${m}`;
+        }
+      }
+      setFormData({ ...data, time: timeStr });
+      setInitialData({ ...data, time: timeStr });
     }
   }, [entry, isOpen, availableTypes]);
 
