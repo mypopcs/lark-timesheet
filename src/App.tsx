@@ -113,8 +113,8 @@ const App: React.FC = () => {
   }, [logEntries, searchTerm, selectedType]);
 
   const allTypesForFilter = useMemo(
-    () => ["all", ...new Set(logEntries.map((e) => e.type))],
-    [logEntries]
+    () => ["all", ...availableTypes],
+    [availableTypes]
   );
 
   // --- 事件处理 ---
@@ -290,6 +290,35 @@ const App: React.FC = () => {
                 status: "已同步",
               });
             }
+          } else if (remoteEntry.status !== "本地删除" && localEntry) {
+            // --- 新增：如果本地有，且远程有变动（如日期被手动修改），则用远程覆盖本地 ---
+            const fieldsToCheck = [
+              "content",
+              "date",
+              "time",
+              "type",
+              "status",
+              "createdAt",
+            ];
+            let needUpdate = false;
+            for (const field of fieldsToCheck) {
+              if ((localEntry as any)[field] !== (remoteEntry as any)[field]) {
+                needUpdate = true;
+                break;
+              }
+            }
+            if (needUpdate) {
+              const idx = newLocalEntries.findIndex(
+                (e) => e.id === remoteEntry.id
+              );
+              if (idx !== -1) {
+                newLocalEntries[idx] = { ...remoteEntry, status: "已同步" };
+                localEntriesMap.set(remoteEntry.id, {
+                  ...remoteEntry,
+                  status: "已同步",
+                });
+              }
+            }
           }
         }
 
@@ -403,15 +432,16 @@ const App: React.FC = () => {
                   </svg>
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                  <div className="absolute left-0 mt-1 min-w-full max-w-[260px] bg-white border border-gray-200 rounded-md shadow-lg z-20 overflow-x-auto">
                     {allTypesForFilter.map((type) => (
                       <button
                         key={type}
-                        className={`block w-full text-left px-4 py-2 text-sm hover:bg-blue-50 ${
+                        className={`block text-nowrap w-full text-left px-4 py-2 text-sm hover:bg-blue-50 ${
                           selectedType === type
                             ? "bg-blue-100 text-blue-700"
                             : "text-gray-700"
                         }`}
+                        style={{ whiteSpace: "nowrap" }}
                         onClick={() => {
                           setSelectedType(type);
                           setDropdownOpen(false);
