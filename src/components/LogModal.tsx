@@ -40,6 +40,7 @@ export const LogModal: React.FC<{
             type: availableTypes[0] || "",
             status: "未同步" as const,
           };
+
       let timeStr = data.time || "";
       if (typeof timeStr === "string" && timeStr) {
         const match = timeStr.match(/^(\d{1,2}):(\d{1,2})/);
@@ -49,8 +50,19 @@ export const LogModal: React.FC<{
           timeStr = `${h}:${m}`;
         }
       }
-      setFormData({ ...data, time: timeStr });
-      setInitialData({ ...data, time: timeStr });
+
+      const dateSource = data.date || format(new Date(), "yyyy/MM/dd");
+
+      // --- 修正点 1: 添加类型检查 ---
+      // 确保只在字符串上调用 .replace()
+      const formattedDateForInput =
+        typeof dateSource === "string"
+          ? dateSource.replace(/\//g, "-")
+          : format(new Date(dateSource), "yyyy-MM-dd"); // 如果是数字(时间戳)，则格式化
+
+      const dataToSet = { ...data, date: formattedDateForInput, time: timeStr };
+      setFormData(dataToSet);
+      setInitialData(dataToSet);
     }
   }, [entry, isOpen, availableTypes]);
 
@@ -73,13 +85,26 @@ export const LogModal: React.FC<{
     }
     setIsSaving(true);
     try {
-      await onSave({
+      // --- 修正点 2: 添加类型检查 ---
+      const dataToSave = {
         ...formData,
+        // 确保只在字符串上调用 .replace()
+        date:
+          typeof formData.date === "string"
+            ? formData.date.replace(/-/g, "/")
+            : "",
+      };
+
+      await onSave({
+        ...dataToSave,
         id: entry?.id || `new-${Date.now()}`,
         createdAt: entry?.createdAt || new Date().toISOString(),
       });
       setMessage("保存成功");
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => {
+        setMessage(null);
+        onClose();
+      }, 1500);
     } finally {
       setIsSaving(false);
     }
@@ -91,7 +116,10 @@ export const LogModal: React.FC<{
       try {
         await onDelete(entry.id);
         setMessage("删除成功");
-        setTimeout(() => setMessage(null), 3000);
+        setTimeout(() => {
+          setMessage(null);
+          onClose();
+        }, 1500);
       } finally {
         setIsDeleting(false);
       }
@@ -151,19 +179,25 @@ export const LogModal: React.FC<{
               <label className="block text-sm font-medium text-gray-700">
                 日期
               </label>
-              <div className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
-                {typeof formData.date === "string"
-                  ? formData.date.replace(/\//g, "-")
-                  : formData.date}
-              </div>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 时间
               </label>
-              <div className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 text-gray-500">
-                {formData.time}
-              </div>
+              <input
+                type="time"
+                name="time"
+                value={formData.time}
+                onChange={handleChange}
+                className="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
           </div>
         </div>
