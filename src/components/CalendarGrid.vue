@@ -120,7 +120,7 @@ const isToday = (day: Date): boolean => isSameDay(day, new Date());
  * @returns 返回匹配的日志条目数组，按时间排序
  */
 const getEntriesForCell = (day: Date, hour: string): LogEntry[] => {
-  const dayStr = format(day, "yyyy-MM-dd");
+  const dayStr = format(day, "yyyy/MM/dd");
   const hourNum = parseInt(hour, 10);
 
   const filtered = props.entries.filter((entry) => {

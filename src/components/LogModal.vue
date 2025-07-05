@@ -155,10 +155,10 @@ watch(
         content: initialState.content,
         type: initialState.type,
       };
-      // ** 核心修正 **: 使用与存储时一致的 `yyyy-MM-dd` 格式来解析
+      // ** 核心修正 **: 使用与存储时一致的 `yyyy/MM/dd` 格式来解析
       formDateTime.value = parse(
         `${initialState.date} ${initialState.time}`,
-        "yyyy-MM-dd HH:mm",
+        "yyyy/MM/dd HH:mm",
         new Date()
       );
     } else {
@@ -166,7 +166,7 @@ watch(
       const initialState = {
         content: "",
         type: props.availableTypes[0] || "",
-        date: format(now, "yyyy-MM-dd"),
+        date: format(now, "yyyy/MM/dd"),
         time: format(now, "HH:mm"),
       };
       originalState.value = { ...initialState };
@@ -181,7 +181,7 @@ watch(
 );
 
 const hasChanges = computed(() => {
-  const currentDateStr = format(formDateTime.value, "yyyy-MM-dd");
+  const currentDateStr = format(formDateTime.value, "yyyy/MM/dd");
   const currentTimeStr = format(formDateTime.value, "HH:mm");
 
   return (
@@ -204,7 +204,7 @@ const handleSave = () => {
   emit("save", {
     content: formData.value.content,
     type: formData.value.type,
-    date: format(formDateTime.value, "yyyy-MM-dd"),
+    date: format(formDateTime.value, "yyyy/MM/dd"),
     time: format(formDateTime.value, "HH:mm"),
   });
   closeModal();
