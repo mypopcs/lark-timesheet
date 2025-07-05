@@ -11,6 +11,7 @@
   "dependencies": {
     "@types/node": "^24.0.10",
     "@vueuse/core": "^13.5.0",
+    "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "lucide-vue-next": "^0.525.0",
     "pinia": "^3.0.3",
