@@ -1,16 +1,13 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
+import path from "path";
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      "/feishu": {
-        target: "https://open.feishu.cn",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/feishu/, "/open-apis"),
-      },
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });
