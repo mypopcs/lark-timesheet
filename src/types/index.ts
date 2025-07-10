@@ -45,15 +45,18 @@ export interface ColorTheme {
 export interface ColorMap {
   [key: string]: ColorTheme;
 }
-//飞书多维表格字段映射
-export const FEISHU_FIELDS = {
-  // 本地系统使用的字段名 : 您在飞书表格中对应的列名
-  uuid: 'uuid', 
-  content: '内容',
-  type: '类型',
-  date: '日期',
-  time: '时间',
-  week: '星期',
-  creatTime: '创建时间',
-  status: '状态',
+
+//tooltips状态
+export interface TooltipState {
+  visible: boolean;
+  content: string;
+  x: number;
+  y: number;
+}
+//确认弹窗状态
+export interface ConfirmState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void; // 当用户点击“确定”时要执行的回调函数
 }

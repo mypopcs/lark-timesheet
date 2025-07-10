@@ -1,9 +1,10 @@
 import { ref } from 'vue';
 import { useLogStore } from '../stores/logStore';
 import { useSettingsStore } from '../stores/settingsStore';
-import { feishuAPIService, localToFeishuFields } from '../services/feishuAPIService';
+import { feishuAPIService,localToFeishuFields  } from '../services/feishuAPIService';
 import type { LogEntry } from '../types';
-import { SyncStatus,FEISHU_FIELDS } from '../types';
+import { SyncStatus } from '../types';
+import { FEISHU_CONFIG } from '../config/constants';
 import { format } from 'date-fns'; //导入日期格式化工具
 import { v4 as uuidv4 } from 'uuid'; //导入UUID生成器
 /**
@@ -13,21 +14,21 @@ import { v4 as uuidv4 } from 'uuid'; //导入UUID生成器
  */
 function feishuToLocal(feishuRecord: any): LogEntry {
   const fields = feishuRecord.fields;// 获取飞书记录字段
-  const date = fields[FEISHU_FIELDS.date] ? format(new Date(fields[FEISHU_FIELDS.date]), 'yyyy/MM/dd') : ''; // 处理日期字段，格式化为yyyy/MM/dd
-  const typeValue = fields[FEISHU_FIELDS.type]; // 处理类型字段（飞书可能是数组形式）
+  const date = fields[FEISHU_CONFIG.FIELDS.date] ? format(new Date(fields[FEISHU_CONFIG.FIELDS.date]), 'yyyy/MM/dd') : ''; // 处理日期字段，格式化为yyyy/MM/dd
+  const typeValue = fields[FEISHU_CONFIG.FIELDS.type]; // 处理类型字段（飞书可能是数组形式）
   const type = Array.isArray(typeValue) ? typeValue[0] : (typeValue || '常规');
-  const weekValue = fields[FEISHU_FIELDS.week];// 处理星期字段（飞书可能是数组形式）
+  const weekValue = fields[FEISHU_CONFIG.FIELDS.week];// 处理星期字段（飞书可能是数组形式）
   const week = Array.isArray(weekValue) ? weekValue[0] : (weekValue || '');
   //返回转换后的本地日志
   return {
-    id: fields[FEISHU_FIELDS.uuid] || uuidv4(),  //使用飞书的UUID或生成新UUID
+    id: fields[FEISHU_CONFIG.FIELDS.uuid] || uuidv4(),  //使用飞书的UUID或生成新UUID
     record_id: feishuRecord.record_id, //飞书ID
-    content: fields[FEISHU_FIELDS.content] || '',
+    content: fields[FEISHU_CONFIG.FIELDS.content] || '',
     type: type,
     date: date,
-    time: fields[FEISHU_FIELDS.time] || '',
+    time: fields[FEISHU_CONFIG.FIELDS.time] || '',
     week: week,
-    creatTime: fields[FEISHU_FIELDS.creatTime] || Date.now(), //创建时间
+    creatTime: fields[FEISHU_CONFIG.FIELDS.creatTime] || Date.now(), //创建时间
     syncStatus: SyncStatus.SYNCED,
   };
 }
@@ -63,8 +64,8 @@ export function useFeishuSync() {
       const localLogMap = new Map(localLogs.map(log => [log.id, log]));
       const remoteRecordMap = new Map(
         remoteRecords
-          .filter(rec => rec.fields && rec.fields[FEISHU_FIELDS.uuid])
-          .map(rec => [rec.fields[FEISHU_FIELDS.uuid], rec])
+          .filter(rec => rec.fields && rec.fields[FEISHU_CONFIG.FIELDS.uuid])
+          .map(rec => [rec.fields[FEISHU_CONFIG.FIELDS.uuid], rec])
       );
 
       const toUpload: LogEntry[] = [];
@@ -96,7 +97,7 @@ export function useFeishuSync() {
       }
 
       for (const remoteRecord of remoteRecords) {
-        const remoteUUID = remoteRecord.fields[FEISHU_FIELDS.uuid];
+        const remoteUUID = remoteRecord.fields[FEISHU_CONFIG.FIELDS.uuid];
         
         if (!remoteUUID) {
             const newLocalEntry = feishuToLocal(remoteRecord);
@@ -105,15 +106,15 @@ export function useFeishuSync() {
             toUpdateOnFeishu.push({
                 record_id: remoteRecord.record_id,
                 fields: { 
-                  [FEISHU_FIELDS.uuid]: newLocalEntry.id,
-                  [FEISHU_FIELDS.status]: '已同步',
+                  [FEISHU_CONFIG.FIELDS.uuid]: newLocalEntry.id,
+                  [FEISHU_CONFIG.FIELDS.status]: '已同步',
                 }
             });
             continue;
         }
 
         const localMatch = localLogMap.get(remoteUUID);
-        const remoteStatus = remoteRecord.fields[FEISHU_FIELDS.status];
+        const remoteStatus = remoteRecord.fields[FEISHU_CONFIG.FIELDS.status];
         if (!localMatch) {
           if (remoteStatus !== '本地已删除') toDownload.push(feishuToLocal(remoteRecord));
         } else {

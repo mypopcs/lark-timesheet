@@ -21,10 +21,10 @@ function getFromLocalStorage<T>(key: string, defaultValue: T): T {
 export const useSettingsStore = defineStore('settings', {
   state: () => ({
     feishuConfig: getFromLocalStorage<FeishuApiConfig>(FEISHU_CONFIG_KEY, {
-      appId: "cli_a8c1429555f2d00b",
-      appSecret: "GIo6yYfRrkY2MmGzPIKrOdjB66NlcDJ1",
-      appToken: "IRkPbJ7tta2qQTsOsVrcCOzmnXH",
-      tableId: "tblldsRMoNBCneUt",
+      appId: import.meta.env.VITE_FEISHU_APP_ID || "",
+      appSecret: import.meta.env.VITE_FEISHU_APP_SECRET || "",
+      appToken: import.meta.env.VITE_FEISHU_APP_TOKEN || "",
+      tableId: import.meta.env.VITE_FEISHU_TABLE_ID || "",
     }),
     syncSettings: getFromLocalStorage<SyncSettings>(SYNC_SETTINGS_KEY, {
       lastSyncTime: null,

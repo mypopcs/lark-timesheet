@@ -1,18 +1,6 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-
-interface TooltipState {
-  visible: boolean;
-  content: string;
-  x: number;
-  y: number;
-}
-interface ConfirmState {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void; // 当用户点击“确定”时要执行的回调函数
-}
+import type {TooltipState,ConfirmState} from '../types'
 
 export const useUiStore = defineStore("ui", () => {
   const tooltip = reactive<TooltipState>({

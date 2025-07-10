@@ -6,15 +6,13 @@ import { useThemeStore } from './themeStore';
 import { dbService } from '../services/dbService';
 import { feishuAPIService } from '../services/feishuAPIService';
 import { useSettingsStore } from './settingsStore';
-
-const WEEK_DAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-const AVAILABLE_TYPES_KEY = 'log_available_types'; // 用于 localStorage 的键
+import { WEEK_DAYS,DB_CONFIG } from '../config/constants';
 
 export const useLogStore = defineStore('logs', {
   state: () => ({
     logs: [] as LogEntry[],
     isLoading: false,
-    availableTypes: JSON.parse(localStorage.getItem(AVAILABLE_TYPES_KEY) || '[]') as string[],
+    availableTypes: JSON.parse(localStorage.getItem(DB_CONFIG.AVAILABLE_TYPES_KEY) || '[]') as string[],
   }),
   getters: {
     uniqueTypes(state): string[] {
@@ -63,7 +61,7 @@ export const useLogStore = defineStore('logs', {
           const types = await feishuAPIService.getTypes();
           if (types.length > 0) {
               this.availableTypes = types;
-              localStorage.setItem(AVAILABLE_TYPES_KEY, JSON.stringify(types));
+              localStorage.setItem(DB_CONFIG.AVAILABLE_TYPES_KEY, JSON.stringify(types));
               console.log("成功从飞书获取类型并已本地存储:", types);
           } else {
               console.warn("飞书未返回任何类型选项，使用默认值。");
@@ -105,13 +103,6 @@ export const useLogStore = defineStore('logs', {
     },
     async deleteLog(id: string) {
       const index = this.logs.findIndex(log => log.id === id);
-      // if (index !== -1) {
-      //   const logToDelete = { ...this.logs[index] };
-      //   logToDelete.syncStatus = 2;
-      //   logToDelete.creatTime = Date.now();
-      //   await dbService.saveLog(logToDelete);
-      //   this.logs[index] = logToDelete;
-      // }
       if (index !== -1) {
         // 使用 JSON.parse(JSON.stringify()) 创建一个纯净的对象副本以存入 IndexedDB
         const logToDelete = JSON.parse(JSON.stringify(this.logs[index]));
