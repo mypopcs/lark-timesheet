@@ -33,6 +33,33 @@ export const useUiStore = defineStore("ui", () => {
     message: '',
     onConfirm: () => {}, // 默认为一个空函数
   });
+
+  // 从localStorage加载草稿数据
+  const savedDraft = localStorage.getItem('logDraft');
+  const initialDraft = savedDraft ? JSON.parse(savedDraft) : {
+    content: '',
+    type: '',
+    date: '',
+    time: ''
+  };
+
+  const logDraft = reactive(initialDraft);
+
+  function updateLogDraft(draft: Partial<typeof logDraft>) {
+    Object.assign(logDraft, draft);
+    // 保存到localStorage
+    localStorage.setItem('logDraft', JSON.stringify(logDraft));
+  }
+
+  function clearLogDraft() {
+    logDraft.content = '';
+    logDraft.type = '';
+    logDraft.date = '';
+    logDraft.time = '';
+    // 清除localStorage
+    localStorage.removeItem('logDraft');
+  }
+
   /**
    * @description 请求打开一个确认弹窗
    * @param options 包含标题、信息和确认回调的对象
@@ -66,5 +93,8 @@ export const useUiStore = defineStore("ui", () => {
     showConfirm,
     handleConfirm,
     handleCancel,
+    logDraft,
+    updateLogDraft,
+    clearLogDraft
   };
 });

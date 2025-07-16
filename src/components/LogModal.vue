@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
+    class="fixed inset-0 bg-zinc-950/45 flex justify-center items-center z-50"
   >
     <div
       ref="modalContent"
-      class="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl relative transform transition-all"
+      class="bg-white rounded-lg shadow-xl p-3 w-full max-w-6xl relative transform transition-all"
     >
       <button
         @click="closeModal"
@@ -14,13 +14,13 @@
         <X :size="24" />
       </button>
 
-      <h2 class="text-xl font-bold mb-6">
+      <h2 class="text-xl font-bold mb-3">
         {{ isCreating ? "创建新日志" : "编辑日志" }}
       </h2>
 
       <form @submit.prevent="handleSave">
         <div class="grid md:grid-cols-9 gap-6">
-          <div class="space-y-4 md:col-span-5">
+          <div class="space-y-4 md:col-span-3">
             <div>
               <label
                 for="log-content"
@@ -29,12 +29,14 @@
               >
               <textarea
                 id="log-content"
+                rows="12"
                 v-model="formData.content"
-                rows="4"
                 required
-                class="mt-1 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
+                class="mt-2 text-sm block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
               ></textarea>
             </div>
+          </div>
+          <div class="space-y-4 md:col-span-3">
             <div>
               <label class="text-sm font-medium text-gray-700"
                 >日期和时间</label
@@ -46,8 +48,7 @@
               <DateTimePicker v-model="formDateTime" />
             </div>
           </div>
-
-          <div class="space-y-4 md:col-span-4">
+          <div class="space-y-4 md:col-span-3">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2"
                 >类型</label
@@ -78,7 +79,7 @@
           </div>
         </div>
 
-        <div class="mt-8 flex gap-3 w-full">
+        <div class="mt-3 flex gap-3 w-full">
           <button
             v-if="!isCreating"
             @click="handleDelete"
@@ -144,6 +145,7 @@ watch(
     if (!isOpen) return;
 
     if (props.entry) {
+      // 编辑模式：使用原数据，忽略草稿
       const initialState = {
         content: props.entry.content,
         type: props.entry.type,
@@ -155,29 +157,59 @@ watch(
         content: initialState.content,
         type: initialState.type,
       };
-      // ** 核心修正 **: 使用与存储时一致的 `yyyy/MM/dd` 格式来解析
       formDateTime.value = parse(
         `${initialState.date} ${initialState.time}`,
         "yyyy/MM/dd HH:mm",
         new Date()
       );
     } else {
-      const now = new Date();
-      const initialState = {
-        content: "",
-        type: props.availableTypes[0] || "",
-        date: format(now, "yyyy/MM/dd"),
-        time: format(now, "HH:mm"),
-      };
-      originalState.value = { ...initialState };
-      formData.value = {
-        content: initialState.content,
-        type: initialState.type,
-      };
-      formDateTime.value = now;
+      // 新建模式：检查草稿
+      if (uiStore.logDraft.content) {
+        formData.value = {
+          content: uiStore.logDraft.content,
+          type: uiStore.logDraft.type || props.availableTypes[0] || "",
+        };
+        formDateTime.value = parse(
+          `${uiStore.logDraft.date} ${uiStore.logDraft.time}`,
+          "yyyy/MM/dd HH:mm",
+          new Date()
+        );
+      } else {
+        // 使用默认值
+        const now = new Date();
+        const initialState = {
+          content: "",
+          type: props.availableTypes[0] || "",
+          date: format(now, "yyyy/MM/dd"),
+          time: format(now, "HH:mm"),
+        };
+        originalState.value = { ...initialState };
+        formData.value = {
+          content: initialState.content,
+          type: initialState.type,
+        };
+        formDateTime.value = now;
+      }
     }
   },
   { immediate: true }
+);
+
+// 监听表单变化并保存到草稿（仅新建模式）
+watch(
+  [() => formData.value, () => formDateTime.value],
+  ([newFormData, newDateTime]) => {
+    // 只有在新建模式下才保存草稿
+    if (!props.entry) {
+      uiStore.updateLogDraft({
+        content: newFormData.content,
+        type: newFormData.type,
+        date: format(newDateTime, "yyyy/MM/dd"),
+        time: format(newDateTime, "HH:mm"),
+      });
+    }
+  },
+  { deep: true }
 );
 
 const hasChanges = computed(() => {
@@ -207,6 +239,7 @@ const handleSave = () => {
     date: format(formDateTime.value, "yyyy/MM/dd"),
     time: format(formDateTime.value, "HH:mm"),
   });
+  uiStore.clearLogDraft(); // 保存后清除草稿
   closeModal();
 };
 
@@ -220,6 +253,7 @@ const handleDelete = () => {
     message: "该记录将会不再显示，同步后该记录将被彻底删除。",
     onConfirm: () => {
       emit("delete", entryIdToDelete);
+      uiStore.clearLogDraft(); // 删除后清除草稿
       closeModal();
     },
   });
